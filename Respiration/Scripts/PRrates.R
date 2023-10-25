@@ -1,4 +1,4 @@
-# photosynthesis and respirometry code for Regen 3.0 June 2023
+# photosynthesis and respiration code for A. pulchra experiments June-July 2023
 remotes::install_github('colin-olito/LoLinR')
 library("ggplot2")
 library("segmented")
@@ -15,46 +15,56 @@ library('Rmisc')
 library('janitor')
 library('readxl')
 
-#Set the path of all respirometry files
-current_dir<- getwd()
-path.p <- file.path(current_dir, "runs")
-#setwd("../Regeneration/Respiration/Data/initial/runs")
+#Set working directory and the path of all respo data files
+setwd("/Users/ninahmunk/Documents/Projects/Regeneration/Respiration/Data/initial")
+getwd()
+path.p<-"/Users/ninahmunk/Documents/Projects/Regeneration/Respiration/Data/initial/runs"
 
-#Bring in the file names.
+#make a list of the file names, n=120
 file.names <- list.files(path = path.p, pattern = "csv$")
 file.names.clean <- tools::file_path_sans_ext(file.names)
 Print(file.names.clean)
 
-#create respiration data frame - 4 columns and # rows corresponding to # of respo files (120)
-Photo.R<- data.frame(matrix(NA, nrow=length(file.names.clean), ncol=4))
-colnames(Photo.R) <- c("fragment.ID.full","Intercept", "umol.L.sec","Temp.C")
-View(Photo.R)
+#create respiration dataframe, 4 columns and # rows corresponding to respo files (n=120)
+R.rates<- data.frame(matrix(NA, nrow=length(file.names.clean), ncol=4))
+colnames(R.rates) <- c("coral_id","Intercept", "umol.L.sec","Temp.C")
+R.rates$coral_id <- file.names.clean # Insert file names into "coral_id" column 
+View(R.rates)
 
-#load in sample information file 
-Treatments<- read.csv(file= "samp_info.csv")
-Volume<- read.csv(file= "chamber_vol.csv")
-SA<- read.csv(file= "final_surface_areas.csv")%>%
-  select(coral_id, CSA_cm2)%>%
-  mutate(coral_id = as.character(coral_id))
-list_df = list(Treatments, Volume, SA)
-Sample.Info<-list_df%>%reduce(left_join, by= 'coral_id')
+#create photosynthesis data frame
+P.rates<- data.frame(matrix(NA, nrow=length(file.names.clean), ncol=4))
+colnames(P.rates) <- c("coral_id","Intercept", "umol.L.sec","Temp.C")
+P.rates$coral_id <- file.names.clean
+View(P.rates)
 
-#load in times as a list the same length as the number of files
+#load in sample information files
+Treatments<- read.csv(file= "samp_info.csv") #genotype, wound type, temp
+Volume<- read.csv(file= "chamber_vol.csv") #vol of water in each chamber 
+SA<- read.csv(file= "final_surface_areas.csv")%>% #final SA of each coral
+  select(coral_id, CSA_cm2)%>% 
+  mutate(coral_id = as.character(coral_id)) 
+list_df = list(Treatments, Volume, SA) 
+Sample.Info<-list_df%>%reduce(left_join, by= 'coral_id') #combine all info by coral id 
+
+#load in times as a list the same length as the number of files, im not sure I need this 
 starttimes<- read.csv(file= "starttimes.csv")
 rtime<-starttimes$rtime #list respiration start times. For respiration measurements, filter as > than this time
 ptime<-starttimes$ptime #for photosynthesis, filter as < than this time
 
 #create path to single respo file 
-path.p1 <- file.path(current_dir, "runs", "20230605_g1_2_O2.csv")
+path.p1 <- file.path(path.p, "20230605_g1_2_O2.csv")
 # Read the respo CSV file using the created path
 R <- read.csv(path.p1, skip = 1, header=T)%>%
   select(delta_t, Value, Temp)%>% # select columns 'delta_t', 'Value', and 'Temp'
   mutate(delta_t=as.numeric(delta_t))%>%
   filter(delta_t > 25.0)
+#fit all possible linear regressions 
+Rmodel <- rankLocReg(xall=R$delta_t, yall=R$Value, alpha=0.4, method= "pc", verbose= TRUE) 
+plot(Rmodel)
 
-  model <- rankLocReg(xall=R$delta_t, yall=R$Value, alpha=0.4, method= "pc", verbose= TRUE)
-  
-plot(model)
+#trying to extract intercept and slope and put it into R.rates dataframe corresponding to file name in coral_id column 
+row_index <- which(R.rates$coral_id == file.names.clean)
+R.rates[row_index, c("Intercept", "umol.L.sec")] <- c(Rmodel$allRegs, c(4,5))
 
 P<-  read.csv(path.p1, skip = 1, header=T)%>%
   select(delta_t, Value, Temp)%>% # select columns 'delta_t', 'Value', and 'Temp'
@@ -65,7 +75,20 @@ Pmodel <- rankLocReg(xall=P$delta_t, yall=P$Value, alpha=0.4, method= "pc", verb
 plot(Pmodel)
 
 
-# LOOP example from arianna #####
+
+
+################## loop shenanigans ##### 
+
+
+
+for(i in 1:length(file.names)) {
+  Resp.Data <-read.table(file.path(path.p,file.names[i]), skip = 1, header=T, sep=",", na.string="NA", fill = TRUE, as.is=TRUE, fileEncoding="latin1")
+}
+
+
+
+# LOOP example from Arianna 
+
 # Run loop to extract slopes from respiration data
 for(i in 1:length(file.names)) { # for every file in list start at the first and run this following function
   Resp.Data <-read.table(file.path(path.p,file.names[i]), skip = 203, header=T, sep=",", na.string="NA", fill = TRUE, as.is=TRUE, fileEncoding="latin1") #reads in the data files
