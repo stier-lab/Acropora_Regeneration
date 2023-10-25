@@ -1,0 +1,26 @@
+{
+    "id": "0425234E",
+    "path": "~/Documents/Projects/Regeneration/Respiration/Scripts/PRrates.R",
+    "project_path": "Respiration/Scripts/PRrates.R",
+    "type": "r_source",
+    "hash": "2660069375",
+    "contents": "",
+    "dirty": false,
+    "created": 1697828000421.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "64,12",
+        "scrollLine": "33"
+    },
+    "folds": "67|28|125|0|\n",
+    "lastKnownWriteTime": 1697843235,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1697843235708,
+    "read_only": false,
+    "read_only_alternatives": []
+}
